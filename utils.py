@@ -9,3 +9,7 @@ def clear():
         #windows and its clear command is weirdly cls instead of clear
         os.system( 'cls' )
     return
+
+def fail():
+    #fail on purpose because something doesn't meet the requirements
+    minutes=int("jp2gmd")

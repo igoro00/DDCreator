@@ -4,10 +4,14 @@ class ask:
     def __init__(self, count):
         self.count = count
         self.timeArray=[]
+        self.timeSecArray=[]
         self.photosArray=[]
 
     def getTimeArray(self):
         return self.timeArray
+
+    def getTimeSecArray(self):
+        return self.timeSecArray
 
     def getPhotosArray(self):
         return self.photosArray
@@ -32,7 +36,10 @@ class ask:
             except ValueError:
                 print("Invalid time format! Try again!")
                 time.sleep(2)
-        self.timeArray.append((hours*3600) + minutes*60)
-    
+        self.timeArray.append(tyTime)
+        self.timeSecArray.append((hours*3600) + minutes*60)
+
+        
+
     def askPhotos(self):
         self.photosArray.append(input("Paste an absolute location of your photo (you can drag it onto this window)\n"))

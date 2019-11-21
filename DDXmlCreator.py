@@ -1,11 +1,14 @@
+#!/usr/bin/python3
 import sys
 import utils
 import time
 import ask
 import write
+from picture import pic
 
 if sys.version_info[0] != 3:
     print("This script requires Python 3")
+    exit()
 
 while(1):
     count = input("How many pictures do you have?\n")
@@ -17,9 +20,21 @@ while(1):
         time.sleep(2)
 
 a = ask.ask(count)
-
+picArray = []
 for i in range(count):
-    a.askTime(i)
-    a.askPhotos()
+    if len(picArray)>0:
+        a.printHeader(i, True, picArray[-1].strTime)
+        path = a.askPath()
+        sumSecTime = sum(pic.secTime for pic in picArray)
+        #print(sumSecTime)
+    else:
+        a.printHeader(i, False, "")
+        path = a.askPath()
+        sumSecTime = 0
+        
+    print()
+    strTime = a.askTime(sumSecTime)
+    picObject = pic(strTime, path, sumSecTime)
+    picArray.append(picObject)
 
-write.write(a.getTimeArray(), a.getTimeSecArray, a.getPhotosArray, count)
+write.write(picArray)

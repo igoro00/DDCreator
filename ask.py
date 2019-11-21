@@ -3,43 +3,53 @@ import utils
 class ask:
     def __init__(self, count):
         self.count = count
-        self.timeArray=[]
-        self.timeSecArray=[]
-        self.photosArray=[]
 
-    def getTimeArray(self):
-        return self.timeArray
-
-    def getTimeSecArray(self):
-        return self.timeSecArray
-
-    def getPhotosArray(self):
-        return self.photosArray
-
-
-    def askTime(self, i):
+    def isLater(self, sumSecTime, current):
+        if sumSecTime > 0:
+            return (current - sumSecTime)>0
+        else:
+            return True
+    
+    def printHeader(self, i, doLastStrTime, lastSrtTime):
         utils.clear()
-        print("Image %d/%d\n\n" %(i+1, self.count))
+        print("Image %d/%d\n" %(i+1, self.count))
+        if(doLastStrTime):
+            print("Last picture is set to show at %s\n"%(lastSrtTime))
+
+    def askTime(self, sumSecTime):
         while True:
-            tyTime = input("What's the time of the image apeearing? (from 00:00 to 23:59, e.g. 22:30)\n")
+            strTime = input("What's the time you want to show that picture at? (from 00:00 to 23:59, e.g. 22:30)\n")
             try:
-                hours = tyTime[0:2]
-                minutes = tyTime[3:5]
-                hours = int(hours)
-                minutes = int(minutes)
-                if(0 <= hours <= 23 and 0 <= minutes <= 59 and tyTime[2:3]==":" ):
-                    #its correct time format and we dont need to fail
-                    break
+                hours = int(strTime[0:2])
+                minutes = int(strTime[3:5])
+                seconds = (hours*3600) + (minutes*60)
+                if(0 <= hours <= 23 and 0 <= minutes <= 59 and strTime[2:3]==":"):
+                    if(self.isLater(sumSecTime, seconds)):
+                        break
+                    else:
+                        utils.fail("NameError")
                 else:
                     #crash try() and force user to try again
-                    utils.fail()
+                    utils.fail("ValueError")
             except ValueError:
-                print("Invalid time format! Try again!")
+                print("Invalid time format! Try again")
                 time.sleep(2)
-        self.timeArray.append(tyTime)
-        self.timeSecArray.append((hours*3600) + minutes*60)
+            except NameError:
+                print("This image must be set later than the last one! Try again")
+                time.sleep(2)
+        print()
+        return strTime
 
+    def askPath(self):
+        path = input("Paste an absolute location of your picture e.g. /home/igor/Pictures/1.jpg (you can drag it onto this window)\n")
         
-
-    def askPhotos(self):
-        self.photosArray.append(input("Paste an absolute location of your photo (you can drag it onto this window)\n"))
+        #forbiddenEndings = {"'", " "}
+        #while True:  
+        #    if path[0] is not "/":
+        #        path = path[1:]
+        #    elif path[-1] in forbiddenEndings:
+        #        path = path[:1] 
+        #    
+        #    else:
+        #        break
+        return path

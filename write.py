@@ -1,37 +1,61 @@
 import utils
+from xml.etree.ElementTree import ElementTree, Element, SubElement, Comment
+import os.path
 
-def write(timeArray, timeSecArray, photosArray, count):
+def write(picArray):
     name = input("Enter name of the file you want create?(without '.xml')\n")  + ".xml"
-    if(utils.askYN("Do you want to save your config to %s?(y/n) "%(name))):
+    if(utils.askYN("Do you want to save your config to %s?(y/n) "%(name))!=True):
         return
-    f = open(name, "w+")
 
-    f.write("<backgroud>\n")
-    f.write("   <starttime>\n")
-    f.write("       <year>2019</year>\n")
-    f.write("       <month>01</month>\n")
-    f.write("       <day>01</day>\n")
-    f.write("       <hour>00</hour>\n")
-    f.write("       <minute>00</minute>\n")
-    f.write("       <second>00</second>\n")
-    f.write("   </starttime>\n")
+    #if (os.path.isfile(name) == False):
     
-    for i in range(count):
-        f.write("   <!-- %s -->\n"%(timeArray[i]))
-        f.write("   <static>\n")
-        f.write("       <duration>%d.0</duration>\n"%(timeSecArray[i]))
-        f.write("       <file>%s</file>\n"%(photosArray[i]))
-        f.write("   </static>\n")
-        f.write('   <transition type="overlay">\n')
-        f.write("       <duration>5.0</duration>\n")
-        f.write("       <from>%s</from>\n"%(photosArray[i]))
-        if i < (count -1):
-            #if not last
-            f.write("       <to>%s</to>\n"%(photosArray[i+1]))
-            f.write("   </transition>\n")
+    background = Element('background')
+    starttime = SubElement(background, 'starttime')
 
-    f.write("       <to>%s</to>\n"%(photosArray[0]))
-    f.write("   </transition>\n")
-    f.write("</backgroud>")
-    f.close()
-    
+    year = SubElement(starttime, 'year')
+    year.text = '2019'
+
+    month = SubElement(starttime, 'month')
+    month.text = '1'
+
+    day = SubElement(starttime, 'day')
+    day.text = '1'
+
+    hour = SubElement(starttime, 'hour')
+    hour.text = '0'
+
+    minute = SubElement(starttime, 'minute')
+    minute.text = '0'
+
+    second = SubElement(starttime, 'second')
+    second.text = '0'
+
+    for i in range(len(picArray)):
+        comment = Comment(picArray[i].strTime)
+        background.append(comment)
+
+        static = SubElement(background, 'static')
+        duration = SubElement(static, 'duration')
+        duration.text = str(picArray[i].secTime) + ".0"
+        path = SubElement(static, 'file')
+        path.text = picArray[i].path
+
+        transition = SubElement(background, 'transition', {'type':'overlay'})
+        duration = SubElement(transition, 'duration')
+        duration.text = '5.0'
+        fromPath = SubElement(transition, 'from')
+        fromPath.text = picArray[i].path
+        toPath = SubElement(transition, 'to')
+        if (i < (len(picArray)-1)):
+            #if its not last then do it normally
+            toPath.text = picArray[i+1].path
+        else:
+            #but if its the last one, end it with the first pic
+            toPath.text = picArray[0].path
+
+
+    print(utils.prettify(background))
+    tree = ElementTree(background)
+    #tree.write(open(name, 'wb+'))
+    f = open(name, 'w')
+    f.write(utils.prettify(background))

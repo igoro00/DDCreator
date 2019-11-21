@@ -41,15 +41,35 @@ class ask:
         return strTime
 
     def askPath(self):
-        path = input("Paste an absolute location of your picture e.g. /home/igor/Pictures/1.jpg (you can drag it onto this window)\n")
-        
-        #forbiddenEndings = {"'", " "}
-        #while True:  
-        #    if path[0] is not "/":
-        #        path = path[1:]
-        #    elif path[-1] in forbiddenEndings:
-        #        path = path[:1] 
-        #    
-        #    else:
-        #        break
+        cPath = None
+        forbiddenEndings = {" ", "'"}
+        while True:
+            path = input("Paste an absolute path to your picture e.g. /home/igor/Pictures/1.jpg (you can drag it onto this windows, but NO 'QUOTES' OR SPACES ALLOWED)\n")
+            #autocorrect system is broken
+            #
+            #while True:
+            #    if path[0] is not "/":
+            #        cPath = path[1:]
+            #        #it maybe has space or quote before /
+            #    elif path[-1] in forbiddenEndings:
+            #        cPath = path[:1]
+            #    else:
+            #        break
+            
+            if cPath is not None:
+                #if it had to be changed
+                print("\n\nIt looks like your path has some illegal attributes\nlike 'quotes' or spaces before or after the proper path.")
+                print("So we tried to change it.")
+                print("%s => %s\n"%(path, cPath))
+                if utils.askYN("Is it a valid path to your picture?(Y/n)") is False:
+                    print("\nWell... Then you have to type it again")
+                    #and the loop loops around again
+                else:
+                    #you user agreed that this is a valid path
+                    path = cPath
+                    break
+            else:
+                #it didn't change
+                break
+
         return path

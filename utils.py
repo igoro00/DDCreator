@@ -40,3 +40,18 @@ def prettify(elem):
     rough_string = ElementTree.tostring(elem, 'utf-8')
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="  ")
+
+def pathIsBroken(path):
+    if (path[0] is not "/") or (path[-1] in {" ", "'"}):
+        return True
+    return False
+
+def fixPath(path):
+    keepFixing = True
+    while keepFixing:
+        if path[0] is not "/":
+            path = path[1:]
+        if path[-1] in {" ", "'"}:
+            path = path[:-1]
+        keepFixing = pathIsBroken(path)
+    return path

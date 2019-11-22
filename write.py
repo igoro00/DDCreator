@@ -6,8 +6,7 @@ def write(picArray):
     name = input("Enter name of the file you want create?(without '.xml')\n")  + ".xml"
     if(utils.askYN("Do you want to save your config to %s?(y/n) "%(name))!=True):
         return
-
-    #if (os.path.isfile(name) == False):
+    print()
     
     background = Element('background')
     starttime = SubElement(background, 'starttime')
@@ -56,6 +55,5 @@ def write(picArray):
 
     print(utils.prettify(background))
     tree = ElementTree(background)
-    #tree.write(open(name, 'wb+'))
     f = open(name, 'w')
     f.write(utils.prettify(background))

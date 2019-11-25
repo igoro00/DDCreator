@@ -1,11 +1,15 @@
 import gi
+import sys
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GdkPixbuf
+sys.path.append('..')
+from CMD.picture import pic
 
 
 class PictureGUI():
-    def __init__(self, path):
+    def __init__(self, path, strTime):
         self.path = path
+        self.picture = pic(path, strTime)
 
     def addPic(self):
         row = Gtk.ListBoxRow()

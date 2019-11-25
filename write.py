@@ -1,8 +1,9 @@
 import utils
 from xml.etree.ElementTree import ElementTree, Element, SubElement, Comment
-import os.path
 
 def write(picArray, name):
+
+    totalSecondsSoFarOhGoshIWantToKillMyself =0
     
     background = Element('background')
     starttime = SubElement(background, 'starttime')
@@ -30,8 +31,12 @@ def write(picArray, name):
         background.append(comment)
 
         static = SubElement(background, 'static')
+
         duration = SubElement(static, 'duration')
-        duration.text = str(picArray[i].secTime) + ".0"
+        dur = utils.strToSec(picArray[i].strTime, totalSecondsSoFarOhGoshIWantToKillMyself)
+        duration.text = str(dur) + ".0"
+        totalSecondsSoFarOhGoshIWantToKillMyself += dur
+
         path = SubElement(static, 'file')
         path.text = picArray[i].path
 

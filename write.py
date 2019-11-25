@@ -2,11 +2,7 @@ import utils
 from xml.etree.ElementTree import ElementTree, Element, SubElement, Comment
 import os.path
 
-def write(picArray):
-    name = input("Enter name of the file you want create?(without '.xml')\n")  + ".xml"
-    if(utils.askYN("Do you want to save your config to %s?(y/n) "%(name))!=True):
-        return
-    print()
+def write(picArray, name):
     
     background = Element('background')
     starttime = SubElement(background, 'starttime')

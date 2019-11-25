@@ -1,0 +1,29 @@
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, GdkPixbuf
+
+
+class PictureGUI():
+    def __init__(self, path):
+        self.path = path
+
+    def addPic(self):
+        row = Gtk.ListBoxRow()
+        marginBox = Gtk.Box(spacing=10)
+        marginBox.set_margin_top(10)
+        marginBox.set_margin_bottom(10)
+        marginBox.set_margin_start(10)
+        marginBox.set_margin_end(20)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
+        marginBox.add(box)
+        row.add(marginBox)
+
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(self.path, height=250, width=140, preserve_aspect_ratio=True)
+        image = Gtk.Image()
+        image.set_from_pixbuf(pixbuf)
+        pathLabel = Gtk.Label(self.path)
+
+        box.pack_start(image, True, True, 0)
+        box.pack_start(pathLabel, True, True, 0)
+        return row

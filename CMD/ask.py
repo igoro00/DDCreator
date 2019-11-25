@@ -43,25 +43,35 @@ class ask:
     def askPath(self):
         cPath = None
         while True:
-            path = input("Paste an absolute path to your picture e.g. /home/igor/Pictures/1.jpg (you can drag it onto this windows, but NO 'QUOTES' OR SPACES ALLOWED)\n")
+            path = input("Paste an absolute path to your picture e.g. /home/igor/Pictures/1.jpg\n\n")
             
             if utils.pathIsBroken(path): cPath = utils.fixPath(path) 
             #call autocorrect if its somehow broken
 
             if cPath is not None:
-                #if it had to be changed
-                print("\n\nIt looks like your path has some illegal attributes\nlike 'quotes' or spaces before or after the proper path.")
-                print("So we tried to change it.")
-                print("%s => %s\n"%(path, cPath))
-                if utils.askYN("Is it a valid path to your picture?(Y/n) ") is False:
-                    print("\nWell... Then you have to type it again")
-                    #and the loop loops around again
-                else:
-                    #you user agreed that this is a valid path
+                #it was changed
+                if (path[0] is "'") and (path[-1] is " ") and (path[-2] is "'"):
+                    #generic and common mistake. no need for warning the user
                     path = cPath
                     break
+                else:
+                    #it was some special case that needed user attention
+                    print("\n\nIt looks like your path has some illegal attributes.")
+                    print("So we tried to change it.")
+                    print("%s => %s\n"%(path, cPath))
+                    if utils.askYN("Is it a valid path to your picture?(Y/n) ") is False:
+                        print("\nWell... Then you have to type it again")
+                        #and the loop loops around again
+                    else:
+                        #you user agreed that this is a valid path
+                        path = cPath
+                        break
             else:
                 #it didn't change
                 break
 
         return path
+    
+    def askXMLPath(self):
+        name = input("Enter name of the file you want create?(without '.xml')\n")  + ".xml"
+        return name

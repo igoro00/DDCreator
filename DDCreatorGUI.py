@@ -1,9 +1,8 @@
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
-
 from GUI.PictureGUI import PictureGUI
-
+import utils
 
 class MainWindow(Gtk.Window):
 
@@ -25,15 +24,17 @@ class MainWindow(Gtk.Window):
         header_bar.pack_start(openButton)
 
         #main box
-        mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        self.add(mainBox)
-        self.addPhoto(mainBox)
+        self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        self.add(self.mainBox)
+        self.addPhoto()
+        if len(self.pArray) > 0:
+            self.addProperties()
 
-        #properties
+    def addProperties(self):
         propSW = Gtk.ScrolledWindow()
         propSW.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
-        mainBox.pack_end(propSW, True, True, 0)
+        self.mainBox.pack_end(propSW, True, True, 0)
 
         propertiesBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         propSW.add(propertiesBox)
@@ -47,19 +48,21 @@ class MainWindow(Gtk.Window):
 
         #time
         timeBox=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        timeLabel = Gtk.Label("Time:")
+        timeLabel = Gtk.Label(label="Time:")
         self.timeInput = Gtk.Entry()
+        self.timeInput.set_placeholder_text("Time in 24hr format(hh:mm)")
         self.timeInput.set_max_length(5)
         self.timeInput.set_alignment(0.5) #its ratio from 0 to 1 how to right its aligned. 0,5 is center
+        self.timeInput.connect("changed", self.changedProp)
         timeBox.pack_start(timeLabel, False, False, 10)
         timeBox.pack_start(self.timeInput, True, True, 10)
         propertiesBox2.pack_start(timeBox, False, False, 5)
 
-
         #transition
         transitionBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        transitionLabel = Gtk.Label("Transition:")
+        transitionLabel = Gtk.Label(label="Transition:")
         self.transitionInput = Gtk.Entry()
+        self.transitionInput.set_placeholder_text("Duration in s")
         self.transitionInput.set_max_length(5)
         self.transitionInput.set_alignment(0.5)  # its ratio from 0 to 1 how to right its aligned. 0,5 is center
         self.transitionInput.connect("changed", self.changedProp)
@@ -71,14 +74,17 @@ class MainWindow(Gtk.Window):
         applyBox = Gtk.Box(spacing= 20)
         propertiesBox.pack_end(applyBox, False, False, 0)
 
-        self.applyButton = Gtk.Button("Apply")
+        self.applyButton = Gtk.Button(label="Apply")
         self.applyButton.connect("clicked", self.apply)
         self.applyButton.set_sensitive(False)
         applyBox.pack_start(self.applyButton, False, False, 0)
 
+        self.restoreButton = Gtk.Button(label="Restore")
+        self.restoreButton.connect("clicked", self.restore)
+        self.restoreButton.set_sensitive(False)
+        applyBox.pack_start(self.restoreButton, False, False, 0)
 
-
-    def addPhoto(self, mainBox):
+    def addPhoto(self):
         sw = Gtk.ScrolledWindow()
         sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         listboxPhotos = Gtk.ListBox()
@@ -93,7 +99,7 @@ class MainWindow(Gtk.Window):
         for i in self.pArray:
             listboxPhotos.add(i.addPic())
         sw.add(listboxPhotos)
-        mainBox.pack_start(sw, True, True, 0)
+        self.mainBox.pack_start(sw, True, True, 0)
 
     def onOpenFile(self, widget):
         dialog = Gtk.FileChooserDialog("Open file(s)", self, Gtk.FileChooserAction.OPEN,
@@ -114,18 +120,39 @@ class MainWindow(Gtk.Window):
         self.transitionInput.set_text(str(currentPic.picture.transition))
 
     def changedProp(self, widget):
+        #first check if strings are valid
+        self.isValid()
+
         #if its something to apply, make Apply clickable, otherwise make it not clickable
         if (self.pArray[self.currentIndex].picture.strTime != self.timeInput.get_text()) or (
             str(self.pArray[self.currentIndex].picture.transition) != self.transitionInput.get_text()
         ):
-            self.applyButton.set_sensitive(True)
+            if (self.timeInput.get_text() != "") and (self.transitionInput.get_text() != ""):
+                self.applyButton.set_sensitive(True)
+            self.restoreButton.set_sensitive(True)
         else:
             self.applyButton.set_sensitive(False)
+            self.restoreButton.set_sensitive(False)
 
     def apply(self, widget):
         self.pArray[self.currentIndex].picture.strTime=self.timeInput.get_text()
         self.pArray[self.currentIndex].picture.transition = self.transitionInput.get_text()
         self.applyButton.set_sensitive(False)
+
+    def restore(self, widget):
+        self.timeInput.set_text(self.pArray[self.currentIndex].picture.strTime)
+        self.transitionInput.set_text(str(self.pArray[self.currentIndex].picture.transition))
+        self.applyButton.set_sensitive(False)
+
+    def isValid(self):
+        if not utils.isTimeValid(self.timeInput.get_text()):
+            self.timeInput.set_text(self.timeInput.get_text()[:-1])
+
+        digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.'}
+        if not digits.issuperset(self.transitionInput.get_text()):
+            if self.transitionInput.get_text()[-1] == ',':
+                self.transitionInput.set_text(self.transitionInput.get_text()[:-1]+'.')
+
 
 
 window = MainWindow()

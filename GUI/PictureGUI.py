@@ -7,9 +7,9 @@ from CMD.picture import pic
 
 
 class PictureGUI():
-    def __init__(self, path, strTime):
+    def __init__(self, path, strTime, transision):
         self.path = path
-        self.picture = pic(path, strTime)
+        self.picture = pic(path, strTime, transision)
 
     def addPic(self):
         row = Gtk.ListBoxRow()

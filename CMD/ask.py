@@ -4,9 +4,9 @@ class ask:
     def __init__(self, count):
         self.count = count
 
-    def isLater(self, sumSecTime, current):
-        if sumSecTime > 0:
-            return (current - sumSecTime)>0
+    def isLater(self, lastSecTime, currentSecTime):
+        if lastSecTime > 0:
+            return currentSecTime>lastSecTime
         else:
             return True
     
@@ -16,15 +16,15 @@ class ask:
         if(doLastStrTime):
             print("Last picture is set to show at %s\n"%(lastSrtTime))
 
-    def askTime(self, sumSecTime):
+    def askTime(self, lastStrTime):
         while True:
             strTime = input("What's the time you want to show that picture at? (from 00:00 to 23:59, e.g. 22:30)\n")
             try:
                 hours = int(strTime[0:2])
                 minutes = int(strTime[3:5])
                 seconds = (hours*3600) + (minutes*60)
-                if(0 <= hours <= 23 and 0 <= minutes <= 59 and strTime[2:3]==":"):
-                    if(self.isLater(sumSecTime, seconds)):
+                if(0 <= hours <= 23 and 0 <= minutes <= 59 and strTime[2]==":"):
+                    if(self.isLater(utils.strToSec(lastStrTime), seconds)):
                         break
                     else:
                         utils.fail("NameError")

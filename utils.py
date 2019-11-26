@@ -63,10 +63,10 @@ def fixPath(path):
     return path
 
 
-def strToSec(strTime, sumSecTime):
+def strToSec(strTime):
     hours = int(strTime[0:2])
     minutes = int(strTime[3:5])
-    return (hours * 3600) + (minutes * 60) - sumSecTime
+    return (hours * 3600) + (minutes * 60)
 
 
 def isTimeValid(timeInput):

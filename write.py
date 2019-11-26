@@ -33,8 +33,9 @@ def write(picArray, name):
         static = SubElement(background, 'static')
 
         duration = SubElement(static, 'duration')
-        dur = utils.strToSec(picArray[i].strTime, totalSecondsSoFarOhGoshIWantToKillMyself)
-        duration.text = str(dur) + ".0"
+        dur = utils.strToSec(picArray[i].strTime)
+        dur -= totalSecondsSoFarOhGoshIWantToKillMyself
+        duration.text = str(float(dur))
         totalSecondsSoFarOhGoshIWantToKillMyself += dur
 
         path = SubElement(static, 'file')

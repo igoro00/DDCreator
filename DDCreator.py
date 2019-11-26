@@ -23,21 +23,19 @@ a = ask.ask(count)
 picArray = []
 for i in range(count):
     if len(picArray)>0:
-        a.printHeader(i, True, picArray[-1].strTime)
-        path = a.askPath()
-        sumSecTime = sum(pic.secTime for pic in picArray)
-        #print(sumSecTime)
+        lastStrTime = picArray[-1].strTime
+        a.printHeader(i, True, lastStrTime)
     else:
-        a.printHeader(i, False, "")
-        path = a.askPath()
-        sumSecTime = 0
-        
+        lastStrTime = "00:00"
+        a.printHeader(i, False, lastStrTime)
+
+    path = a.askPath()
     print()
-    strTime = a.askTime(sumSecTime)
-    picObject = pic(strTime, path, sumSecTime)
+    strTime = a.askTime(lastStrTime)
+    picObject = pic(path, strTime, 5)
     picArray.append(picObject)
 
-name = a.askXMLPath
+name = a.askXMLPath()
 if utils.askYN("Do you want to save your config to %s?(Y/n) "%(name)):
     print()
     write.write(picArray, name)

@@ -1,7 +1,11 @@
 # Gnome-DD-XML-Maker
 THIS APP IS UNDER DEVELOPMENT! IT PROBABLY WON'T WORK YET but if you want you can try it
 
+
 Python app that creates XML file for you to use as Dynamic Wallpaper in Gnome DE.
+
+
+
 
 How to use:
 

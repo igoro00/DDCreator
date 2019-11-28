@@ -1,9 +1,10 @@
 import gi
-
 gi.require_version("Gtk", "3.0")
+
 from gi.repository import Gtk
 from GUI.PictureGUI import PictureGUI
 import utils
+import write
 from xml.etree import ElementTree as ET
 
 
@@ -18,21 +19,23 @@ class MainWindow(Gtk.Window):
         self.noPhotosBox = None
         self.sw = None
         self.propSW = None
+        self.fileName = ""
+        self.changed=False
 
-        header_bar = Gtk.HeaderBar()
-        header_bar.set_show_close_button(True)
-        header_bar.props.title = "DDCreator"
-        self.set_titlebar(header_bar)
+        self.header_bar = Gtk.HeaderBar()
+        self.header_bar.set_show_close_button(True)
+        self.header_bar.props.title = "DDCreator"
+        self.set_titlebar(self.header_bar)
 
         # open button on the right
         openButton = Gtk.Button(label="Open")
         openButton.connect("clicked", self.onOpenFile)
-        header_bar.pack_start(openButton)
+        self.header_bar.pack_start(openButton)
 
         # import(photos) button on the right
         importButton = Gtk.Button(label="Import Pictures")
-        #importButton.connect("clicked", self.importPhotos)
-        header_bar.pack_start(importButton)
+        # importButton.connect("clicked", self.importPhotos)
+        self.header_bar.pack_start(importButton)
 
         # main box
         self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -54,6 +57,31 @@ class MainWindow(Gtk.Window):
         else:
             self.addNoPhotos()
         self.show_all()
+
+    def addPhoto(self):
+        self.sw = Gtk.ScrolledWindow()
+        self.sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.listboxPhotos = Gtk.ListBox()
+        self.listboxPhotos.connect("row-selected", self.loadProperties)
+        self.listboxPhotos.set_selection_mode(Gtk.SelectionMode.BROWSE)
+
+        for i in self.pArray:
+            self.listboxPhotos.add(i.addPic())
+        self.sw.add(self.listboxPhotos)
+        self.mainBox.pack_start(self.sw, True, True, 0)
+    def addNoPhotos(self):
+        self.mainBox.set_orientation(Gtk.Orientation.VERTICAL)
+
+        self.noPhotosBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.mainBox.pack_start(self.noPhotosBox, True, False, 0)
+
+        noPhotosTitle = Gtk.Label()
+        noPhotosTitle.set_markup("<big><big><big><big>No pictures yet!</big></big></big></big>")
+        self.noPhotosBox.pack_start(noPhotosTitle, fill=True, expand=False, padding=10)
+
+        noPhotosMessage = Gtk.Label()
+        noPhotosMessage.set_markup("<big>To add them, click Import button and choose your pictures!</big>")
+        self.noPhotosBox.pack_start(noPhotosMessage, fill=True, expand=False, padding=10)
 
     def addProperties(self):
         self.propSW = Gtk.ScrolledWindow()
@@ -108,43 +136,6 @@ class MainWindow(Gtk.Window):
         self.restoreButton.connect("clicked", self.restore)
         self.restoreButton.set_sensitive(False)
         applyBox.pack_start(self.restoreButton, False, False, 0)
-
-    def addPhoto(self):
-        self.sw = Gtk.ScrolledWindow()
-        self.sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        self.listboxPhotos = Gtk.ListBox()
-        self.listboxPhotos.connect("row-selected", self.loadProperties)
-        self.listboxPhotos.set_selection_mode(Gtk.SelectionMode.BROWSE)
-
-        for i in self.pArray:
-            self.listboxPhotos.add(i.addPic())
-        self.sw.add(self.listboxPhotos)
-        self.mainBox.pack_start(self.sw, True, True, 0)
-
-    def onOpenFile(self, widget):
-        dialog = Gtk.FileChooserDialog("Open file(s)", self, Gtk.FileChooserAction.OPEN,
-                                       ("Cancel", Gtk.ResponseType.CANCEL,
-                                        "Open", Gtk.ResponseType.OK))
-        _filter = Gtk.FileFilter()
-        _filter.set_name("XML Files")
-        _filter.add_pattern("*.xml")
-        dialog.add_filter(_filter)
-        _filter = Gtk.FileFilter()
-        _filter.set_name("All Files")
-        _filter.add_pattern("*")
-        dialog.add_filter(_filter)
-
-        response = dialog.run()
-        if (response == Gtk.ResponseType.OK):
-            print("File selected: " + dialog.get_filename())
-            self.pArray = self.importXml(dialog.get_filename())
-        elif response == Gtk.ResponseType.CANCEL:
-            print("rabini są niezdecydowani")
-
-        dialog.destroy()
-        self.refresh()
-        self.listboxPhotos.select_row(self.listboxPhotos.get_row_at_index(0))
-
     def loadProperties(self, listbox, row):
         currentPic = self.pArray[row.get_index()]
         self.currentIndex = row.get_index()
@@ -166,17 +157,6 @@ class MainWindow(Gtk.Window):
         else:
             self.applyButton.set_sensitive(False)
             self.restoreButton.set_sensitive(False)
-
-    def apply(self, widget):
-        self.pArray[self.currentIndex].picture.strTime = self.timeInput.get_text()
-        self.pArray[self.currentIndex].picture.transition = self.transitionInput.get_text()
-        self.applyButton.set_sensitive(False)
-
-    def restore(self, widget):
-        self.timeInput.set_text(self.pArray[self.currentIndex].picture.strTime)
-        self.transitionInput.set_text(str(self.pArray[self.currentIndex].picture.transition))
-        self.applyButton.set_sensitive(False)
-
     def isValid(self):
         if not utils.isTimeValid(self.timeInput.get_text()):
             self.timeInput.set_text(self.timeInput.get_text()[:-1])
@@ -186,51 +166,108 @@ class MainWindow(Gtk.Window):
             if self.transitionInput.get_text()[-1] == ',':
                 self.transitionInput.set_text(self.transitionInput.get_text()[:-1] + '.')
 
-    def addNoPhotos(self):
-        self.mainBox.set_orientation(Gtk.Orientation.VERTICAL)
+    def apply(self, widget):
+        self.pArray[self.currentIndex].picture.strTime = self.timeInput.get_text()
+        self.pArray[self.currentIndex].picture.transition = self.transitionInput.get_text()
+        self.changed = True
+        self.header_bar.props.title = "%s%s - DDCreator" % ("*", utils.pathToFileName(self.fileName))
+        self.set_titlebar(self.header_bar)
+        self.applyButton.set_sensitive(False)
+    def restore(self, widget):
+        self.timeInput.set_text(self.pArray[self.currentIndex].picture.strTime)
+        self.transitionInput.set_text(str(self.pArray[self.currentIndex].picture.transition))
+        self.applyButton.set_sensitive(False)
 
-        self.noPhotosBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self.mainBox.pack_start(self.noPhotosBox, True, False, 0)
+    def onOpenFile(self, widget):
+        if self.changed == True:
+            dialog = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.QUESTION,
+                                       buttons=Gtk.ButtonsType.YES_NO, text="Are you sure?")
+            dialog.format_secondary_text(
+                "There is unsaved session running. Do you want to continue?(it will delete all your changes!)")
+            response = dialog.run()
+            if response == Gtk.ResponseType.YES:
+                dialog.destroy()
+            elif response == Gtk.ResponseType.NO:
+                dialog.destroy()
+                return
 
-        noPhotosTitle = Gtk.Label()
-        noPhotosTitle.set_markup("<big><big><big><big>No pictures yet!</big></big></big></big>")
-        self.noPhotosBox.pack_start(noPhotosTitle, fill=True, expand=False, padding=10)
 
-        noPhotosMessage = Gtk.Label()
-        noPhotosMessage.set_markup("<big>To add them, click Import button and choose your pictures!</big>")
-        self.noPhotosBox.pack_start(noPhotosMessage, fill=True, expand=False, padding=10)
+        dialog = Gtk.FileChooserDialog(title="Open file(s)", parent=self, action=Gtk.FileChooserAction.OPEN)
+        dialog.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
+                           "Open", Gtk.ResponseType.OK)
 
+        _filter = Gtk.FileFilter()
+        _filter.set_name("XML Files")
+        _filter.add_pattern("*.xml")
+        dialog.add_filter(_filter)
+        _filter = Gtk.FileFilter()
+        _filter.set_name("All Files")
+        _filter.add_pattern("*")
+        dialog.add_filter(_filter)
+
+        response = dialog.run()
+        if (response == Gtk.ResponseType.OK):
+            print("File selected: " + dialog.get_filename())
+            self.pArray = self.importXml(dialog.get_filename())
+        elif response == Gtk.ResponseType.CANCEL:
+            print("rabini są niezdecydowani")
+
+        dialog.destroy()
+        self.refresh()
+        self.listboxPhotos.select_row(self.listboxPhotos.get_row_at_index(0))
     def importXml(self, file):
-        tree = ET.parse(file)
-        root = tree.getroot()
-        sumSecTime=0
-        myList=[]
-        #print(root.findall('.//static'))
-        for i in range(len(root.findall('.//static'))):
-            static = root.findall('.//static')[i]
-            transition = root.findall('.//transition')[i]
+        sumSecTime = 0
+        myList = []
+        self.fileName=file
+        try:
+            tree = ET.parse(file)
+            root = tree.getroot()
+            for i in range(len(root.findall('.//static'))):
+                static = root.findall('.//static')[i]
+                transition = root.findall('.//transition')[i]
 
-            secTime = int(float(static.find('duration').text))
-            sumSecTime += secTime
+                secTime = int(float(static.find('duration').text))
+                sumSecTime += secTime
 
-            minutes = sumSecTime/60
-            hours = 0
-            while(minutes > 59):
-                minutes -= 60
-                hours += 1
+                minutes = sumSecTime / 60
+                hours = 0
+                while (minutes > 59):
+                    minutes -= 60
+                    hours += 1
 
+                if hours < 10:
+                    hours = "0" + str(int(hours))
+                if minutes < 10:
+                    minutes = "0" + str(int(minutes))
+                strTime = "%s:%s" % (str(hours), str(minutes))
 
-            if hours < 10:
-                hours = "0"+str(int(hours))
-            if minutes < 10:
-                minutes = "0"+str(int(minutes))
-            strTime = "%s:%s"%(str(hours), str(minutes))
-            print(minutes)
-
-            p = PictureGUI(path=static.find('file').text, strTime=strTime, transition=float(transition.find('duration').text))
-            myList.append(p)
+                p = PictureGUI(path=static.find('file').text, strTime=strTime,
+                               transition=float(transition.find('duration').text))
+                myList.append(p)
+        except:
+            dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.WARNING,
+                                       Gtk.ButtonsType.YES_NO, "Something went wrong!")
+            dialog.format_secondary_text(
+                "Your file is probably corrupted. Make sure your file is correct.\nDo you want to show what has been loaded before crash?")
+            response = dialog.run()
+            if response == Gtk.ResponseType.YES:
+                dialog.destroy()
+                return myList
+            elif response == Gtk.ResponseType.NO:
+                dialog.destroy()
+                return self.pArray
+        self.header_bar.props.title = "%s%s - DDCreator"%("", utils.pathToFileName(self.fileName))
+        self.set_titlebar(self.header_bar)
         return myList
 
+    def save(self):
+        self.changed = False
+        write.write(picArray=self.pArray, name=self.fileName)
+        self.header_bar.props.title = "%s%s - DDCreator" % ("", utils.pathToFileName(self.fileName))
+        self.set_titlebar(self.header_bar)
+    def saveAs(self):
+        #self.fileName = dialog that chooses new file
+        self.save()
 
 
 

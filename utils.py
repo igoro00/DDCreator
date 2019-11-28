@@ -91,3 +91,11 @@ def isTimeValid(timeInput):
         return False
 
     return True
+
+def pathToFileName(path):
+    output=""
+    while path[-1] != '/':
+        output = path[-1] + output
+        path = path[:-1]
+    return output
+

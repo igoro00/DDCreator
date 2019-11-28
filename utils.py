@@ -99,3 +99,17 @@ def pathToFileName(path):
         path = path[:-1]
     return output
 
+def compare_pArrays(pArray, pArray_bak):
+    if len(pArray) != len(pArray_bak):
+        return True
+
+    for i in range(len(pArray)):
+        if pArray[i].picture.strTime != pArray_bak[i].picture.strTime:
+            return True
+        if pArray[i].picture.path != pArray_bak[i].picture.path:
+            return True
+        if pArray[i].picture.transition != pArray_bak[i].picture.transition:
+            return True
+
+    return False
+

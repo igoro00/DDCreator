@@ -27,25 +27,25 @@ def write(picArray, name):
     second.text = '0'
 
     for i in range(len(picArray)):
-        comment = Comment(picArray[i].strTime)
+        comment = Comment(picArray[i].picture.strTime)
         background.append(comment)
 
         static = SubElement(background, 'static')
 
         duration = SubElement(static, 'duration')
-        dur = utils.strToSec(picArray[i].strTime)
+        dur = utils.strToSec(picArray[i].picture.strTime)
         dur -= totalSecondsSoFarOhGoshIWantToKillMyself
         duration.text = str(float(dur))
         totalSecondsSoFarOhGoshIWantToKillMyself += dur
 
         path = SubElement(static, 'file')
-        path.text = picArray[i].path
+        path.text = picArray[i].picture.path
 
         transition = SubElement(background, 'transition', {'type':'overlay'})
         duration = SubElement(transition, 'duration')
         duration.text = '5.0'
         fromPath = SubElement(transition, 'from')
-        fromPath.text = picArray[i].path
+        fromPath.text = picArray[i].picture.path
         toPath = SubElement(transition, 'to')
         if (i < (len(picArray)-1)):
             #if its not last then do it normally

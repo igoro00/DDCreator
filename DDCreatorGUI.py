@@ -1,4 +1,5 @@
 import gi
+
 gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
@@ -16,11 +17,12 @@ class MainWindow(Gtk.Window):
         self.set_border_width(10)
         self.set_default_size(700, 400)
         self.pArray = []
+        self.pArray_bak = []
         self.noPhotosBox = None
         self.sw = None
         self.propSW = None
         self.fileName = ""
-        self.changed=False
+        self.changed = False
 
         self.header_bar = Gtk.HeaderBar()
         self.header_bar.set_show_close_button(True)
@@ -28,7 +30,7 @@ class MainWindow(Gtk.Window):
         self.set_titlebar(self.header_bar)
 
         # open button on the right
-        openButton = Gtk.Button(label="Open")
+        openButton = Gtk.Button(label="Open XML")
         openButton.connect("clicked", self.onOpenFile)
         self.header_bar.pack_start(openButton)
 
@@ -36,6 +38,11 @@ class MainWindow(Gtk.Window):
         importButton = Gtk.Button(label="Import Pictures")
         # importButton.connect("clicked", self.importPhotos)
         self.header_bar.pack_start(importButton)
+
+        # import(photos) button on the right
+        saveButton = Gtk.Button(label="Save")
+        saveButton.connect("clicked", self.save)
+        self.header_bar.pack_end(saveButton)
 
         # main box
         self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -124,25 +131,24 @@ class MainWindow(Gtk.Window):
         propertiesBox2.pack_start(transitionBox, False, False, 5)
 
         # Apply and reset buttons
-        applyBox = Gtk.Box(spacing=20)
+        applyBox = Gtk.Box(spacing=0)
         propertiesBox.pack_end(applyBox, False, False, 0)
 
         self.applyButton = Gtk.Button(label="Apply")
         self.applyButton.connect("clicked", self.apply)
         self.applyButton.set_sensitive(False)
-        applyBox.pack_start(self.applyButton, False, False, 0)
+        applyBox.pack_start(self.applyButton, True, True, 10)
 
         self.restoreButton = Gtk.Button(label="Restore")
         self.restoreButton.connect("clicked", self.restore)
         self.restoreButton.set_sensitive(False)
-        applyBox.pack_start(self.restoreButton, False, False, 0)
+        applyBox.pack_start(self.restoreButton, True, True, 5)
     def loadProperties(self, listbox, row):
         currentPic = self.pArray[row.get_index()]
         self.currentIndex = row.get_index()
         print(currentPic.picture.strTime)
         self.timeInput.set_text(currentPic.picture.strTime)
         self.transitionInput.set_text(str(currentPic.picture.transition))
-
     def changedProp(self, widget):
         # first check if strings are valid
         self.isValid()
@@ -157,6 +163,7 @@ class MainWindow(Gtk.Window):
         else:
             self.applyButton.set_sensitive(False)
             self.restoreButton.set_sensitive(False)
+
     def isValid(self):
         if not utils.isTimeValid(self.timeInput.get_text()):
             self.timeInput.set_text(self.timeInput.get_text()[:-1])
@@ -169,10 +176,9 @@ class MainWindow(Gtk.Window):
     def apply(self, widget):
         self.pArray[self.currentIndex].picture.strTime = self.timeInput.get_text()
         self.pArray[self.currentIndex].picture.transition = self.transitionInput.get_text()
-        self.changed = True
-        self.header_bar.props.title = "%s%s - DDCreator" % ("*", utils.pathToFileName(self.fileName))
-        self.set_titlebar(self.header_bar)
         self.applyButton.set_sensitive(False)
+        self.restoreButton.set_sensitive(False)
+        self.isChanged()
     def restore(self, widget):
         self.timeInput.set_text(self.pArray[self.currentIndex].picture.strTime)
         self.transitionInput.set_text(str(self.pArray[self.currentIndex].picture.transition))
@@ -191,8 +197,7 @@ class MainWindow(Gtk.Window):
                 dialog.destroy()
                 return
 
-
-        dialog = Gtk.FileChooserDialog(title="Open file(s)", parent=self, action=Gtk.FileChooserAction.OPEN)
+        dialog = Gtk.FileChooserDialog(title="Open XML file", parent=self, action=Gtk.FileChooserAction.OPEN)
         dialog.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
                            "Open", Gtk.ResponseType.OK)
 
@@ -209,6 +214,7 @@ class MainWindow(Gtk.Window):
         if (response == Gtk.ResponseType.OK):
             print("File selected: " + dialog.get_filename())
             self.pArray = self.importXml(dialog.get_filename())
+            self.pArray_bak = self.importXml(dialog.get_filename())
         elif response == Gtk.ResponseType.CANCEL:
             print("rabini są niezdecydowani")
 
@@ -218,7 +224,7 @@ class MainWindow(Gtk.Window):
     def importXml(self, file):
         sumSecTime = 0
         myList = []
-        self.fileName=file
+        self.fileName = file
         try:
             tree = ET.parse(file)
             root = tree.getroot()
@@ -256,20 +262,35 @@ class MainWindow(Gtk.Window):
             elif response == Gtk.ResponseType.NO:
                 dialog.destroy()
                 return self.pArray
-        self.header_bar.props.title = "%s%s - DDCreator"%("", utils.pathToFileName(self.fileName))
+        self.header_bar.props.title = "%s%s - DDCreator" % ("", utils.pathToFileName(self.fileName))
         self.set_titlebar(self.header_bar)
         return myList
 
-    def save(self):
-        self.changed = False
-        write.write(picArray=self.pArray, name=self.fileName)
-        self.header_bar.props.title = "%s%s - DDCreator" % ("", utils.pathToFileName(self.fileName))
+    def save(self, widget):
+        if self.isChanged() == True:
+            write.write(picArray=self.pArray, name=self.fileName)
+            self.pArray_bak = self.pArray
+            self.isChanged()
+        else:
+            pass
+    def saveAs(self, widget):
+        # self.fileName = dialog that chooses new file
+        self.save(widget)
+
+    def isChanged(self):
+
+        changed = utils.compare_pArrays(self.pArray, self.pArray_bak)
+
+        if self.fileName != "":
+            if changed:
+                self.header_bar.props.title = "%s%s - DDCreator" % ("*", utils.pathToFileName(self.fileName))
+            else:
+                self.header_bar.props.title = "%s%s - DDCreator" % ("", utils.pathToFileName(self.fileName))
+        else:
+            self.header_bar.props.title = "DDCreator"
         self.set_titlebar(self.header_bar)
-    def saveAs(self):
-        #self.fileName = dialog that chooses new file
-        self.save()
 
-
+        return changed
 
 window = MainWindow()
 window.connect("delete-event", Gtk.main_quit)

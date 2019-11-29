@@ -29,20 +29,25 @@ class MainWindow(Gtk.Window):
         self.header_bar.props.title = "DDCreator"
         self.set_titlebar(self.header_bar)
 
-        # open button on the right
+        # open(xml) button on the left
         openButton = Gtk.Button(label="Open XML")
         openButton.connect("clicked", self.onOpenFile)
         self.header_bar.pack_start(openButton)
 
-        # import(photos) button on the right
+        # import(photos) button on the left
         importButton = Gtk.Button(label="Import Pictures")
         # importButton.connect("clicked", self.importPhotos)
         self.header_bar.pack_start(importButton)
 
-        # import(photos) button on the right
-        saveButton = Gtk.Button(label="Save")
-        saveButton.connect("clicked", self.save)
-        self.header_bar.pack_end(saveButton)
+        # Save(xml) button on the right
+        self.saveButton = Gtk.Button(label="Save")
+        self.saveButton.connect("clicked", self.save)
+        self.header_bar.pack_end(self.saveButton)
+
+        # Save As(xml) button on the right
+        self.saveasButton = Gtk.Button(label="Save As")
+        self.saveasButton.connect("clicked", self.saveAs)
+        self.header_bar.pack_end(self.saveasButton)
 
         # main box
         self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -64,6 +69,7 @@ class MainWindow(Gtk.Window):
         else:
             self.addNoPhotos()
         self.show_all()
+        self.isChanged()
 
     def addPhoto(self):
         self.sw = Gtk.ScrolledWindow()
@@ -213,7 +219,8 @@ class MainWindow(Gtk.Window):
         response = dialog.run()
         if (response == Gtk.ResponseType.OK):
             print("File selected: " + dialog.get_filename())
-            self.pArray = self.importXml(dialog.get_filename())
+            self.fileName = dialog.get_filename()
+            self.pArray = self.importXml(self.fileName)
             self.pArray_bak = self.importXml(dialog.get_filename())
         elif response == Gtk.ResponseType.CANCEL:
             print("rabini są niezdecydowani")
@@ -224,7 +231,6 @@ class MainWindow(Gtk.Window):
     def importXml(self, file):
         sumSecTime = 0
         myList = []
-        self.fileName = file
         try:
             tree = ET.parse(file)
             root = tree.getroot()
@@ -271,11 +277,23 @@ class MainWindow(Gtk.Window):
             write.write(picArray=self.pArray, name=self.fileName)
             self.pArray_bak = self.pArray
             self.isChanged()
-        else:
-            pass
     def saveAs(self, widget):
-        # self.fileName = dialog that chooses new file
-        self.save(widget)
+        dialog = Gtk.FileChooserDialog(title="Open XML file", parent=self, action=Gtk.FileChooserAction.SAVE)
+        dialog.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
+                           "Save As", Gtk.ResponseType.APPLY)
+        filter = Gtk.FileFilter()
+        filter.set_name("Text Files")
+        filter.add_mime_type("text/xml")
+        dialog.add_filter(filter)
+        Gtk.FileChooser.set_do_overwrite_confirmation(dialog, True)
+        response = dialog.run()
+        if response == Gtk.ResponseType.APPLY:
+            self.fileName = dialog.get_filename()
+            self.save(widget)
+            dialog.destroy()
+        elif response == Gtk.ResponseType.CANCEL:
+            dialog.destroy()
+        dialog.destroy()
 
     def isChanged(self):
 
@@ -283,10 +301,20 @@ class MainWindow(Gtk.Window):
 
         if self.fileName != "":
             if changed:
+                self.saveasButton.set_sensitive(True)
+                self.saveButton.set_sensitive(True)
                 self.header_bar.props.title = "%s%s - DDCreator" % ("*", utils.pathToFileName(self.fileName))
             else:
+                self.saveasButton.set_sensitive(True)
+                self.saveButton.set_sensitive(False)
                 self.header_bar.props.title = "%s%s - DDCreator" % ("", utils.pathToFileName(self.fileName))
         else:
+            if changed:
+                self.saveButton.set_sensitive(True)
+                self.saveasButton.set_sensitive(True)
+            else:
+                self.saveButton.set_sensitive(False)
+                self.saveasButton.set_sensitive(False)
             self.header_bar.props.title = "DDCreator"
         self.set_titlebar(self.header_bar)
 

@@ -57,5 +57,5 @@ def write(picArray, name):
 
     print(utils.prettify(background))
     tree = ElementTree(background)
-    f = open(name, 'w')
+    f = open(name, 'w+')
     f.write(utils.prettify(background))

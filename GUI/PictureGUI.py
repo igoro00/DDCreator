@@ -8,7 +8,6 @@ from CMD.picture import pic
 
 class PictureGUI():
     def __init__(self, path, strTime, transition):
-        self.path = path
         self.picture = pic(path, strTime, transition)
 
     def addPic(self):
@@ -23,11 +22,24 @@ class PictureGUI():
         marginBox.add(box)
         row.add(marginBox)
 
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(self.path, height=250, width=140, preserve_aspect_ratio=True)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(self.picture.path, height=250, width=140, preserve_aspect_ratio=True)
         image = Gtk.Image()
         image.set_from_pixbuf(pixbuf)
-        pathLabel = Gtk.Label(self.path)
-
         box.pack_start(image, True, True, 0)
-        box.pack_start(pathLabel, True, True, 0)
+
+        dataBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        box.pack_start(dataBox, fill=False, expand=False, padding=0)
+
+        moreDataBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        dataBox.pack_end(moreDataBox, fill=False, expand=False, padding=0)
+
+        pathLabel = Gtk.Label(self.picture.path)
+        dataBox.pack_end(pathLabel, fill=False, expand=False, padding=0)
+
+        strTimeLabel = Gtk.Label("Time: %s" % self.picture.strTime)
+        moreDataBox.pack_start(strTimeLabel, fill=True, expand=True, padding=0)
+
+        transitionLabel = Gtk.Label("Transition: %s" % self.picture.transition)
+        moreDataBox.pack_start(transitionLabel, fill=True, expand=True, padding=0)
+
         return row

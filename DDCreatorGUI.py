@@ -1,11 +1,10 @@
 import gi
-
 gi.require_version("Gtk", "3.0")
-
 from gi.repository import Gtk
 from GUI.PictureGUI import PictureGUI
 import utils
 import write
+from copy import deepcopy, copy
 from xml.etree import ElementTree as ET
 
 
@@ -19,10 +18,13 @@ class MainWindow(Gtk.Window):
         self.pArray = []
         self.pArray_bak = []
         self.noPhotosBox = None
+        self.listboxPhotos = None
         self.sw = None
         self.propSW = None
         self.fileName = ""
         self.changed = False
+        self.currentIndex = 0
+        self.scrollPos = float(0)
 
         self.header_bar = Gtk.HeaderBar()
         self.header_bar.set_show_close_button(True)
@@ -55,10 +57,11 @@ class MainWindow(Gtk.Window):
         self.refresh()
 
     def refresh(self):
-        print(self.pArray)
+        self.scrollPos = float(0)
         if self.noPhotosBox is not None:
             self.noPhotosBox.destroy()
         if self.sw is not None:
+            self.scrollPos = self.sw.get_vadjustment().get_value()
             self.sw.destroy()
         if self.propSW is not None:
             self.propSW.destroy()
@@ -66,14 +69,20 @@ class MainWindow(Gtk.Window):
             self.mainBox.set_orientation(Gtk.Orientation.HORIZONTAL)
             self.addPhoto()
             self.addProperties()
+
+            #adj = self.sw.get_vadjustment()
+            #adj.set_value(self.scrollPos)
+            #self.sw.set_vadjustment(adj)
+
+            self.listboxPhotos.select_row(self.listboxPhotos.get_row_at_index(self.currentIndex))
         else:
             self.addNoPhotos()
         self.show_all()
         self.isChanged()
-
     def addPhoto(self):
         self.sw = Gtk.ScrolledWindow()
         self.sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
         self.listboxPhotos = Gtk.ListBox()
         self.listboxPhotos.connect("row-selected", self.loadProperties)
         self.listboxPhotos.set_selection_mode(Gtk.SelectionMode.BROWSE)
@@ -81,6 +90,9 @@ class MainWindow(Gtk.Window):
         for i in self.pArray:
             self.listboxPhotos.add(i.addPic())
         self.sw.add(self.listboxPhotos)
+        adj = self.sw.get_vadjustment()
+        adj.set_value(self.scrollPos)
+        self.sw.set_vadjustment(adj)
         self.mainBox.pack_start(self.sw, True, True, 0)
     def addNoPhotos(self):
         self.mainBox.set_orientation(Gtk.Orientation.VERTICAL)
@@ -152,7 +164,7 @@ class MainWindow(Gtk.Window):
     def loadProperties(self, listbox, row):
         currentPic = self.pArray[row.get_index()]
         self.currentIndex = row.get_index()
-        print(currentPic.picture.strTime)
+        #print(currentPic.picture.strTime)
         self.timeInput.set_text(currentPic.picture.strTime)
         self.transitionInput.set_text(str(currentPic.picture.transition))
     def changedProp(self, widget):
@@ -181,10 +193,10 @@ class MainWindow(Gtk.Window):
 
     def apply(self, widget):
         self.pArray[self.currentIndex].picture.strTime = self.timeInput.get_text()
-        self.pArray[self.currentIndex].picture.transition = self.transitionInput.get_text()
+        self.pArray[self.currentIndex].picture.transition = str(float(self.transitionInput.get_text()))
         self.applyButton.set_sensitive(False)
         self.restoreButton.set_sensitive(False)
-        self.isChanged()
+        self.refresh()
     def restore(self, widget):
         self.timeInput.set_text(self.pArray[self.currentIndex].picture.strTime)
         self.transitionInput.set_text(str(self.pArray[self.currentIndex].picture.transition))
@@ -227,7 +239,6 @@ class MainWindow(Gtk.Window):
 
         dialog.destroy()
         self.refresh()
-        self.listboxPhotos.select_row(self.listboxPhotos.get_row_at_index(0))
     def importXml(self, file):
         sumSecTime = 0
         myList = []
@@ -273,9 +284,9 @@ class MainWindow(Gtk.Window):
         return myList
 
     def save(self, widget):
-        if self.isChanged() == True:
+        if self.changed:
             write.write(picArray=self.pArray, name=self.fileName)
-            self.pArray_bak = self.pArray
+            self.pArray_bak = deepcopy(self.pArray)
             self.isChanged()
     def saveAs(self, widget):
         dialog = Gtk.FileChooserDialog(title="Open XML file", parent=self, action=Gtk.FileChooserAction.SAVE)
@@ -297,10 +308,10 @@ class MainWindow(Gtk.Window):
 
     def isChanged(self):
 
-        changed = utils.compare_pArrays(self.pArray, self.pArray_bak)
+        self.changed = utils.compare_pArrays(self.pArray, self.pArray_bak)
 
         if self.fileName != "":
-            if changed:
+            if self.changed:
                 self.saveasButton.set_sensitive(True)
                 self.saveButton.set_sensitive(True)
                 self.header_bar.props.title = "%s%s - DDCreator" % ("*", utils.pathToFileName(self.fileName))
@@ -309,7 +320,7 @@ class MainWindow(Gtk.Window):
                 self.saveButton.set_sensitive(False)
                 self.header_bar.props.title = "%s%s - DDCreator" % ("", utils.pathToFileName(self.fileName))
         else:
-            if changed:
+            if self.changed:
                 self.saveButton.set_sensitive(True)
                 self.saveasButton.set_sensitive(True)
             else:
@@ -318,7 +329,7 @@ class MainWindow(Gtk.Window):
             self.header_bar.props.title = "DDCreator"
         self.set_titlebar(self.header_bar)
 
-        return changed
+        return self.changed
 
 window = MainWindow()
 window.connect("delete-event", Gtk.main_quit)

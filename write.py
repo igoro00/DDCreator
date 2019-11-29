@@ -43,16 +43,16 @@ def write(picArray, name):
 
         transition = SubElement(background, 'transition', {'type':'overlay'})
         duration = SubElement(transition, 'duration')
-        duration.text = '5.0'
+        duration.text = str(picArray[i].picture.transition)
         fromPath = SubElement(transition, 'from')
         fromPath.text = picArray[i].picture.path
         toPath = SubElement(transition, 'to')
         if (i < (len(picArray)-1)):
             #if its not last then do it normally
-            toPath.text = picArray[i+1].path
+            toPath.text = picArray[i+1].picture.path
         else:
             #but if its the last one, end it with the first pic
-            toPath.text = picArray[0].path
+            toPath.text = picArray[0].picture.path
 
 
     print(utils.prettify(background))

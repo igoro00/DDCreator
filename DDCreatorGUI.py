@@ -40,7 +40,7 @@ class MainWindow(Gtk.Window):
 
         # import(photos) button on the left
         importButton = Gtk.Button(label="Import Pictures")
-        # importButton.connect("clicked", self.importPhotos)
+        importButton.connect("clicked", self.onImportPhotos)
         self.header_bar.pack_start(importButton)
 
         # Save(xml) button on the right
@@ -63,8 +63,13 @@ class MainWindow(Gtk.Window):
             self.noPhotosBox.destroy()
         if self.sw is not None:
             self.sw.destroy()
+            self.sw = None
+        if self.listboxPhotos is not None:
+            self.listboxPhotos.destroy()
+            self.listboxPhotos = None
         if self.propSW is not None:
             self.propSW.destroy()
+            self.propSW = None
         if len(self.pArray) > 0:
             self.mainBox.set_orientation(Gtk.Orientation.HORIZONTAL)
             self.sw = Gtk.ScrolledWindow()
@@ -79,10 +84,13 @@ class MainWindow(Gtk.Window):
         self.show_all()
         self.isChanged()
     def soft_refresh(self):
-        self.removeAllRows(self.listboxPhotos)
-        self.show_all()
-        self.addPhoto()
-        self.listboxPhotos.select_row(self.listboxPhotos.get_row_at_index(self.currentIndex))
+        if len(self.pArray) > 0:
+            self.removeAllRows(self.listboxPhotos)
+            self.show_all()
+            self.addPhoto()
+            self.listboxPhotos.select_row(self.listboxPhotos.get_row_at_index(self.currentIndex))
+        else:
+            self.full_refresh()
 
     def addPhoto(self):
         if self.listboxPhotos is None:
@@ -217,6 +225,12 @@ class MainWindow(Gtk.Window):
         self.transitionInput.set_text(str(self.pArray[self.currentIndex].picture.transition))
         self.applyButton.set_sensitive(False)
 
+    def onImportPhotos(self, widget):
+        return
+        dialog = Gtk.FileChooserDialog(title="Import Picture(s)", parent=self, action=Gtk.FileChooserAction.OPEN)
+        dialog.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
+                           "Import", Gtk.ResponseType.OK)
+
     def onOpenFile(self, widget):
         if self.changed:
             dialog = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.QUESTION,
@@ -303,8 +317,10 @@ class MainWindow(Gtk.Window):
             write.write(picArray=self.pArray, name=self.fileName)
             self.pArray_bak = deepcopy(self.pArray)
             self.isChanged()
+            self.full_refresh()
     def saveAs(self, widget):
         dialog = Gtk.FileChooserDialog(title="Open XML file", parent=self, action=Gtk.FileChooserAction.SAVE)
+        dialog.set_current_name("Untitled")
         dialog.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
                            "Save As", Gtk.ResponseType.APPLY)
         filter = Gtk.FileFilter()

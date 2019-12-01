@@ -4,7 +4,7 @@ from gi.repository import Gtk
 from GUI.PictureGUI import PictureGUI
 import utils
 import write
-from copy import deepcopy, copy
+from copy import deepcopy
 from xml.etree import ElementTree as ET
 
 
@@ -12,6 +12,8 @@ class MainWindow(Gtk.Window):
 
     def __init__(self):
         Gtk.Window.__init__(self)
+
+        self.connect("delete-event", self.quit)
 
         self.set_border_width(10)
         self.set_default_size(700, 400)
@@ -24,7 +26,7 @@ class MainWindow(Gtk.Window):
         self.fileName = ""
         self.changed = False
         self.currentIndex = 0
-        self.scrollPos = float(0)
+        self.deleting_rows = False
 
         self.header_bar = Gtk.HeaderBar()
         self.header_bar.set_show_close_button(True)
@@ -54,46 +56,58 @@ class MainWindow(Gtk.Window):
         # main box
         self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         self.add(self.mainBox)
-        self.refresh()
+        self.full_refresh()
 
-    def refresh(self):
-        self.scrollPos = float(0)
+    def full_refresh(self):
         if self.noPhotosBox is not None:
             self.noPhotosBox.destroy()
         if self.sw is not None:
-            self.scrollPos = self.sw.get_vadjustment().get_value()
             self.sw.destroy()
         if self.propSW is not None:
             self.propSW.destroy()
         if len(self.pArray) > 0:
             self.mainBox.set_orientation(Gtk.Orientation.HORIZONTAL)
+            self.sw = Gtk.ScrolledWindow()
+            self.sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+            self.mainBox.pack_start(self.sw, True, True, 0)
             self.addPhoto()
             self.addProperties()
 
-            #adj = self.sw.get_vadjustment()
-            #adj.set_value(self.scrollPos)
-            #self.sw.set_vadjustment(adj)
-
-            self.listboxPhotos.select_row(self.listboxPhotos.get_row_at_index(self.currentIndex))
+            self.listboxPhotos.select_row(self.listboxPhotos.get_row_at_index(0))
         else:
             self.addNoPhotos()
         self.show_all()
         self.isChanged()
-    def addPhoto(self):
-        self.sw = Gtk.ScrolledWindow()
-        self.sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+    def soft_refresh(self):
+        self.removeAllRows(self.listboxPhotos)
+        self.show_all()
+        self.addPhoto()
+        self.listboxPhotos.select_row(self.listboxPhotos.get_row_at_index(self.currentIndex))
 
-        self.listboxPhotos = Gtk.ListBox()
-        self.listboxPhotos.connect("row-selected", self.loadProperties)
-        self.listboxPhotos.set_selection_mode(Gtk.SelectionMode.BROWSE)
+    def addPhoto(self):
+        if self.listboxPhotos is None:
+            self.listboxPhotos = Gtk.ListBox()
+            self.listboxPhotos.connect("row-selected", self.loadProperties)
+            self.listboxPhotos.set_selection_mode(Gtk.SelectionMode.BROWSE)
+            self.sw.add(self.listboxPhotos)
 
         for i in self.pArray:
             self.listboxPhotos.add(i.addPic())
-        self.sw.add(self.listboxPhotos)
-        adj = self.sw.get_vadjustment()
-        adj.set_value(self.scrollPos)
-        self.sw.set_vadjustment(adj)
-        self.mainBox.pack_start(self.sw, True, True, 0)
+
+        self.show_all()
+
+    def removeAllRows(self, listbox):
+        self.deleting_rows = True
+        i = 0
+        while True:
+            row = listbox.get_row_at_index(0)
+            if row is not None:
+                row.destroy()
+                i += 1
+            else:
+                break
+
+        self.deleting_rows = False
     def addNoPhotos(self):
         self.mainBox.set_orientation(Gtk.Orientation.VERTICAL)
 
@@ -162,11 +176,11 @@ class MainWindow(Gtk.Window):
         self.restoreButton.set_sensitive(False)
         applyBox.pack_start(self.restoreButton, True, True, 5)
     def loadProperties(self, listbox, row):
-        currentPic = self.pArray[row.get_index()]
-        self.currentIndex = row.get_index()
-        #print(currentPic.picture.strTime)
-        self.timeInput.set_text(currentPic.picture.strTime)
-        self.transitionInput.set_text(str(currentPic.picture.transition))
+        if not self.deleting_rows:
+            currentPic = self.pArray[row.get_index()]
+            self.currentIndex = row.get_index()
+            self.timeInput.set_text(currentPic.picture.strTime)
+            self.transitionInput.set_text(str(currentPic.picture.transition))
     def changedProp(self, widget):
         # first check if strings are valid
         self.isValid()
@@ -196,14 +210,15 @@ class MainWindow(Gtk.Window):
         self.pArray[self.currentIndex].picture.transition = str(float(self.transitionInput.get_text()))
         self.applyButton.set_sensitive(False)
         self.restoreButton.set_sensitive(False)
-        self.refresh()
+        self.soft_refresh()
+        self.isChanged()
     def restore(self, widget):
         self.timeInput.set_text(self.pArray[self.currentIndex].picture.strTime)
         self.transitionInput.set_text(str(self.pArray[self.currentIndex].picture.transition))
         self.applyButton.set_sensitive(False)
 
     def onOpenFile(self, widget):
-        if self.changed == True:
+        if self.changed:
             dialog = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.QUESTION,
                                        buttons=Gtk.ButtonsType.YES_NO, text="Are you sure?")
             dialog.format_secondary_text(
@@ -238,7 +253,7 @@ class MainWindow(Gtk.Window):
             print("rabini są niezdecydowani")
 
         dialog.destroy()
-        self.refresh()
+        self.full_refresh()
     def importXml(self, file):
         sumSecTime = 0
         myList = []
@@ -331,7 +346,30 @@ class MainWindow(Gtk.Window):
 
         return self.changed
 
+    def quit(self, widget, event):
+        if self.changed:
+            dialog = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.QUESTION, text="Are you sure?")
+            dialog.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
+                               "Save", Gtk.ResponseType.OK,
+                               "Save As", Gtk.ResponseType.APPLY,
+                               "Exit", Gtk.ResponseType.YES,)
+            dialog.format_secondary_text(
+                "There is unsaved session running. Do you want to continue?(it will delete all your changes!)")
+            response = dialog.run()
+            if response == Gtk.ResponseType.YES:    #Close
+                dialog.destroy()
+                Gtk.main_quit()
+            elif response == Gtk.ResponseType.OK:   #Save
+                self.save(None)
+                dialog.destroy()
+                Gtk.main_quit()
+            elif response == Gtk.ResponseType.APPLY: #Save As
+                self.saveAs(None)
+                dialog.destroy()
+                Gtk.main_quit()
+            dialog.destroy()
+            return True
+
 window = MainWindow()
-window.connect("delete-event", Gtk.main_quit)
 window.show_all()
 Gtk.main()

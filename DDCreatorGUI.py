@@ -95,7 +95,8 @@ class MainWindow(Gtk.Window):
     def addPhoto(self):
         if self.listboxPhotos is None:
             self.listboxPhotos = Gtk.ListBox()
-            self.listboxPhotos.connect("row-selected", self.loadProperties)
+            #self.listboxPhotos.connect("row-selected", self.loadProperties)
+            self.listboxPhotos.connect("row-activated", self.loadProperties)
             self.listboxPhotos.set_selection_mode(Gtk.SelectionMode.BROWSE)
             self.sw.add(self.listboxPhotos)
 
@@ -150,6 +151,7 @@ class MainWindow(Gtk.Window):
         timeBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         timeLabel = Gtk.Label(label="Time:")
         self.timeInput = Gtk.Entry()
+        self.timeInput.connect("activate", self.apply)
         self.timeInput.set_placeholder_text("Time in 24hr format(hh:mm)")
         self.timeInput.set_max_length(5)
         self.timeInput.set_alignment(0.5)  # its ratio from 0 to 1 how to right its aligned. 0,5 is center
@@ -162,6 +164,7 @@ class MainWindow(Gtk.Window):
         transitionBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         transitionLabel = Gtk.Label(label="Transition:")
         self.transitionInput = Gtk.Entry()
+        self.transitionInput.connect("activate", self.apply)
         self.transitionInput.set_placeholder_text("Duration in s")
         self.transitionInput.set_max_length(5)
         self.transitionInput.set_alignment(0.5)  # its ratio from 0 to 1 how to right its aligned. 0,5 is center
@@ -226,10 +229,25 @@ class MainWindow(Gtk.Window):
         self.applyButton.set_sensitive(False)
 
     def onImportPhotos(self, widget):
-        return
         dialog = Gtk.FileChooserDialog(title="Import Picture(s)", parent=self, action=Gtk.FileChooserAction.OPEN)
+        dialog.set_select_multiple(True)
         dialog.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
                            "Import", Gtk.ResponseType.OK)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            pending = dialog.get_filenames()
+            while len(pending) > 0:
+                p = PictureGUI(path=pending[0], strTime="21:37",
+                               transition=float(5))
+                self.pArray.append(p)
+                pending = pending[1:]
+            if self.sw is None: #if there is noPictures screen
+                self.full_refresh() #create list
+            else:
+                self.soft_refresh() #only modify list
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
+        dialog.destroy()
 
     def onOpenFile(self, widget):
         if self.changed:
@@ -351,13 +369,19 @@ class MainWindow(Gtk.Window):
                 self.saveButton.set_sensitive(False)
                 self.header_bar.props.title = "%s%s - DDCreator" % ("", utils.pathToFileName(self.fileName))
         else:
-            if self.changed:
-                self.saveButton.set_sensitive(True)
-                self.saveasButton.set_sensitive(True)
+            if len(self.pArray) > 0:
+                if self.changed:
+                    self.saveButton.set_sensitive(False)
+                    self.saveasButton.set_sensitive(True)
+                    self.header_bar.props.title = "* Untitled.xml - DDCreator"
+                else:
+                    self.saveButton.set_sensitive(False)
+                    self.saveasButton.set_sensitive(False)
+                    self.header_bar.props.title = "Untitled.xml - DDCreator"
             else:
                 self.saveButton.set_sensitive(False)
                 self.saveasButton.set_sensitive(False)
-            self.header_bar.props.title = "DDCreator"
+                self.header_bar.props.title = "DDCreator"
         self.set_titlebar(self.header_bar)
 
         return self.changed
@@ -385,6 +409,9 @@ class MainWindow(Gtk.Window):
                 Gtk.main_quit()
             dialog.destroy()
             return True
+        else:
+            Gtk.main_quit()
+
 
 window = MainWindow()
 window.show_all()
